@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>النظام الشمسي التفاعلي – تعليمي متعدد اللغات</title>
+    <style>
+        /* ----- RESET & BASE ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #000;
+            overflow: hidden;
+            color: #fff;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        /* ----- GLASS UI ----- */
+        .ui-glass {
+            background: rgba(10, 14, 30, 0.72);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        /* ----- TOP BAR ----- */
+        #top-bar {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 120;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            gap: 14px;
+            min-width: 300px;
+            max-width: 94vw;
+            background: rgba(8, 12, 28, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 40px;
+            flex-wrap: wrap;
+        }
+        #top-bar .title {
+            font-weight: 700;
+            font-size: 1.0rem;
+            background: linear-gradient(135deg, #f9d976, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            white-space: nowrap;
+        }
+        #top-bar .title span {
+            font-weight: 300;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.4);
+            font-size: 0.7rem;
+            margin-left: 4px;
+        }
+        #lang-selector {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        #lang-selector button {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.65rem;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: inherit;
+        }
+        #lang-selector button:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        #lang-selector button.active {
+            color: #fff;
+            background: rgba(243, 156, 18, 0.25);
+            box-shadow: 0 0 12px rgba(243, 156, 18, 0.1);
+        }
+
+        /* ----- SIDEBAR (tree) ----- */
+        #sidebar {
+            position: fixed;
+            top: 80px;
+            left: 16px;
+            z-index: 110;
+            width: 240px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            padding: 14px 12px 12px 12px;
+            background: rgba(8, 12, 28, 0.80);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        #sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        #sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+
+        #sidebar-project-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f9d976;
+            letter-spacing: 0.02em;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #sidebar-project-title .icon {
+            font-size: 1.1rem;
+        }
+
+        #sidebar-tree {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .tree-planet {
+            display: flex;
+            align-items: center;
+            padding: 5px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.8);
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 2px solid transparent;
+        }
+        .tree-planet:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+        .tree-planet.active {
+            background: rgba(243, 156, 18, 0.15);
+            color: #fff;
+            border-left-color: #f39c12;
+            box-shadow: inset 0 0 0 1px rgba(243, 156, 18, 0.15);
+        }
+        .tree-planet .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .tree-planet .planet-label {
+            flex: 1;
+            font-weight: 500;
+        }
+        .tree-planet .badge {
+            font-size: 0.6rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0 8px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .tree-moon {
+            display: flex;
+            align-items: center;
+            padding: 3px 8px 3px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            gap: 8px;
+            border-left: 1px dashed rgba(255, 255, 255, 0.06);
+            margin-left: 14px;
+        }
+        .tree-moon:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+        }
+        .tree-moon.active {
+            background: rgba(243, 156, 18, 0.10);
+            color: #fff;
+            border-left-color: #f39c12;
+        }
+        .tree-moon .color-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .tree-moon .moon-label {
+            flex: 1;
+            font-weight: 400;
+        }
+        .tree-moon .moon-icon {
+            font-size: 0.6rem;
+            opacity: 0.5;
+            margin-right: 2px;
+        }
+
+        /* ----- INFO PANEL ----- */
+        #info-panel {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 100;
+            width: min(560px, 92vw);
+            padding: 20px 24px;
+            background: rgba(8, 12, 28, 0.85);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.40s cubic-bezier(0.23, 1, 0.32, 1);
+            pointer-events: none;
+        }
+        #info-panel.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+        }
+        #info-panel .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        #info-panel .planet-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #info-panel .planet-name .sub {
+            font-weight: 300;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        #info-panel .planet-color-dot {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+        #info-panel .close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #info-panel .close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        #info-panel .facts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 20px;
+            margin: 8px 0 12px 0;
+            font-size: 0.85rem;
+        }
+        #info-panel .facts .fact-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 3px 0;
+        }
+        #info-panel .facts .fact-item .label {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 400;
+        }
+        #info-panel .facts .fact-item .value {
+            font-weight: 500;
+        }
+        #info-panel .fun-fact {
+            font-size: 0.88rem;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border-left: 3px solid rgba(243, 156, 18, 0.4);
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+        #info-panel .fun-fact::before {
+            content: "✨ ";
+            opacity: 0.5;
+        }
+
+        /* ----- CONTROLS ----- */
+        #controls-bar {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 90;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 18px;
+            background: rgba(8, 12, 28, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        #controls-bar input[type="range"] {
+            width: 90px;
+            height: 3px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            outline: none;
+        }
+        #controls-bar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #f39c12;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(243, 156, 18, 0.2);
+        }
+        #controls-bar .speed-label {
+            min-width: 48px;
+            text-align: center;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        #controls-bar .reset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 3px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        #controls-bar .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        /* ----- TRACKING INDICATOR ----- */
+        #tracking-indicator {
+            position: fixed;
+            bottom: 156px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 85;
+            font-size: 0.7rem;
+            color: rgba(243, 156, 18, 0.6);
+            letter-spacing: 0.06em;
+            opacity: 0;
+            transition: opacity 0.6s;
+            pointer-events: none;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 14px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(243, 156, 18, 0.15);
+        }
+        #tracking-indicator.visible {
+            opacity: 1;
+        }
+
+        /* ----- HINT ----- */
+        #hint {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 80;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 0.04em;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.8s;
+            font-weight: 300;
+        }
+        #hint.hidden {
+            opacity: 0;
+        }
+
+        /* ----- RESPONSIVE ----- */
+        @media (max-width: 768px) {
+            #sidebar {
+                left: 8px;
+                width: 190px;
+                top: 74px;
+                padding: 10px 8px;
+                font-size: 0.7rem;
+                max-height: calc(100vh - 180px);
+            }
+            #sidebar-project-title {
+                font-size: 0.7rem;
+            }
+            .tree-planet {
+                font-size: 0.7rem;
+                padding: 4px 6px;
+            }
+            .tree-moon {
+                font-size: 0.65rem;
+                padding: 2px 6px 2px 24px;
+                margin-left: 8px;
+            }
+            #info-panel {
+                bottom: 12px;
+                padding: 14px 16px;
+                width: 94vw;
+                border-radius: 18px;
+            }
+            #info-panel .planet-name {
+                font-size: 1.2rem;
+            }
+            #info-panel .facts {
+                grid-template-columns: 1fr;
+                font-size: 0.75rem;
+            }
+            #controls-bar {
+                bottom: 80px;
+                padding: 6px 12px;
+                gap: 8px;
+                font-size: 0.65rem;
+            }
+            #controls-bar input[type="range"] {
+                width: 60px;
+            }
+            #hint {
+                bottom: 140px;
+                font-size: 0.6rem;
+            }
+            #tracking-indicator {
+                bottom: 130px;
+                font-size: 0.6rem;
+            }
+            #top-bar {
+                top: 10px;
+                padding: 6px 14px;
+                min-width: unset;
+                width: 94vw;
+                border-radius: 30px;
+            }
+            #top-bar .title {
+                font-size: 0.85rem;
+            }
+            #lang-selector button {
+                font-size: 0.55rem;
+                padding: 2px 8px;
+            }
+        }
+        @media (max-width: 480px) {
+            #sidebar {
+                display: none;
+            }
+            #info-panel .facts {
+                grid-template-columns: 1fr 1fr;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== TOP BAR ===== -->
+    <div id="top-bar">
+        <div class="title">🪐 النظام الشمسي <span>· مستكشف</span></div>
+        <div id="lang-selector"></div>
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <div id="sidebar" class="ui-glass">
+        <div id="sidebar-project-title">
+            <span class="icon">🌌</span>
+            <span id="project-title-text">استكشاف النظام الشمسي</span>
+        </div>
+        <div id="sidebar-tree"></div>
+    </div>
+
+    <!-- ===== INFO PANEL ===== -->
+    <div id="info-panel">
+        <div class="panel-header">
+            <div class="planet-name">
+                <span class="planet-color-dot" id="p-color-dot"></span>
+                <span id="p-name">الأرض</span>
+                <span class="sub" id="p-name-en">Earth</span>
+            </div>
+            <button class="close-btn" id="panel-close">✕</button>
+        </div>
+        <div class="facts" id="p-facts"></div>
+        <div class="fun-fact" id="p-funfact"></div>
+    </div>
+
+    <!-- ===== CONTROLS ===== -->
+    <div id="controls-bar">
+        <span>⏱</span>
+        <input type="range" id="speed-slider" min="0" max="3" step="0.05" value="1" />
+        <span class="speed-label" id="speed-label">1.0×</span>
+        <button class="reset-btn" id="reset-view">⟲ إعادة</button>
+    </div>
+
+    <div id="tracking-indicator">✦ تتبع الكاميرا نشط ✦</div>
+    <div id="hint">🌍 انقر أي كوكب أو قمر للتعلم · اسحب للدوران · مرر للتقريب</div>
+
+    <!-- ===== THREE.JS ===== -->
+    <div id="canvas-container"></div>
+
+    <!-- ===== IMPORTS ===== -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // ================================================================
+        //  IMPORTS
+        // ================================================================
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // ================================================================
+        //  DATA — planets + moons (8 languages)
+        // ================================================================
+        const LANG_CODES = ['en', 'es', 'fr', 'de', 'zh', 'ja', 'ar', 'hi'];
+        const LANG_NAMES = {
+            en: 'English',
+            es: 'Español',
+            fr: 'Français',
+            de: 'Deutsch',
+            zh: '中文',
+            ja: '日本語',
+            ar: 'العربية',
+            hi: 'हिन्दी'
+        };
+
+        const PROJECT_TITLE = {
+            en: '🌌 Solar System Explorer',
+            es: '🌌 Explorador del Sistema Solar',
+            fr: '🌌 Explorateur du Système Solaire',
+            de: '🌌 Sonnensystem-Entdecker',
+            zh: '🌌 太阳系探索者',
+            ja: '🌌 太陽系探検家',
+            ar: '🌌 مستكشف النظام الشمسي',
+            hi: '🌌 सौर मंडल एक्सप्लोरर'
+        };
+
+        const COLORS = {
+            sun: 0xFDB813,
+            mercury: 0xB5B5B5,
+            venus: 0xE6B856,
+            earth: 0x4B8BBE,
+            mars: 0xC1440E,
+            jupiter: 0xD4A06A,
+            saturn: 0xE8D191,
+            uranus: 0x7EC8E3,
+            neptune: 0x3B4C9C,
+            moon: 0xAAAAAA,
+            phobos: 0x8B7D6B,
+            deimos: 0x6B5D4B,
+            io: 0xE8D191,
+            europa: 0xB0C4DE,
+            ganymede: 0xC8B8A8,
+            callisto: 0x8B7D6B,
+            titan: 0xD4A06A,
+            enceladus: 0xE0E8E8,
+            miranda: 0xB0B8B0,
+            triton: 0x90A8B8,
+        };
+
+        // Planet data with moons
+        const PLANET_DATA = [{
+            id: 'mercury',
+            color: COLORS.mercury,
+            size: 0.30,
+            orbit: 6.0,
+            speed: 4.15,
+            tilt: 0.03,
+            moons: [],
+            translations: {
+                en: { name: 'Mercury', diameter: '4,879 km', distance: '57.9 M km',
+                    period: '88 days', moons: '0', fun: 'A year on Mercury is just 88 Earth days, but a day lasts 59 Earth days!' },
+                es: { name: 'Mercurio', diameter: '4.879 km', distance: '57,9 M km',
+                    period: '88 días', moons: '0', fun: '¡Un año en Mercurio son solo 88 días terrestres, pero un día dura 59 días terrestres!' },
+                fr: { name: 'Mercure', diameter: '4 879 km', distance: '57,9 M km',
+                    period: '88 jours', moons: '0', fun: 'Une année sur Mercure ne dure que 88 jours terrestres, mais un jour y dure 59 jours terrestres!' },
+                de: { name: 'Merkur', diameter: '4.879 km', distance: '57,9 M km',
+                    period: '88 Tage', moons: '0', fun: 'Ein Jahr auf dem Merkur dauert nur 88 Erdentage, aber ein Tag dauert 59 Erdentage!' },
+                zh: { name: '水星', diameter: '4,879 km', distance: '5,790万 km',
+                    period: '88 天', moons: '0', fun: '水星上的一年只有88个地球日，但一天却长达59个地球日！' },
+                ja: { name: '水星', diameter: '4,879 km', distance: '5,790万 km',
+                    period: '88 日', moons: '0', fun: '水星の1年はわずか88地球日ですが、1日は59地球日もあります！' },
+                ar: { name: 'عطارد', diameter: '٤٬٨٧٩ كم', distance: '٥٧٫٩ مليون كم',
+                    period: '٨٨ يومًا', moons: '٠', fun: 'سنة على عطارد هي 88 يومًا أرضيًا فقط، لكن اليوم يستمر 59 يومًا أرضيًا!' },
+                hi: { name: 'बुध', diameter: '4,879 किमी', distance: '5.79 करोड़ किमी',
+                    period: '88 दिन', moons: '0', fun: 'बुध पर एक साल सिर्फ 88 पृथ्वी दिन का होता है, लेकिन एक दिन 59 पृथ्वी दिन का होता है!' }
+            }
+        }, {
+            id: 'venus',
+            color: COLORS.venus,
+            size: 0.55,
+            orbit: 8.5,
+            speed: 1.62,
+            tilt: 177.4,
+            moons: [],
+            translations: {
+                en: { name: 'Venus', diameter: '12,104 km', distance: '108.2 M km',
+                    period: '225 days', moons: '0', fun: 'Venus rotates backwards (retrograde) and is the hottest planet at 465°C!' },
+                es: { name: 'Venus', diameter: '12.104 km', distance: '108,2 M km',
+                    period: '225 días', moons: '0', fun: '¡Venus rota al revés (retrógrada) y es el planeta más caliente con 465 °C!' },
+                fr: { name: 'Vénus', diameter: '12 104 km', distance: '108,2 M km',
+                    period: '225 jours', moons: '0', fun: 'Vénus tourne à l\'envers (rétrograde) et est la planète la plus chaude avec 465 °C!' },
+                de: { name: 'Venus', diameter: '12.104 km', distance: '108,2 M km',
+                    period: '225 Tage', moons: '0', fun: 'Die Venus rotiert rückwärts (retrograd) und ist mit 465 °C der heißeste Planet!' },
+                zh: { name: '金星', diameter: '12,104 km', distance: '1.082亿 km',
+                    period: '225 天', moons: '0', fun: '金星逆向自转，是太阳系中最热的行星，表面温度高达465°C！' },
+                ja: { name: '金星', diameter: '12,104 km', distance: '1.082億 km',
+                    period: '225 日', moons: '0', fun: '金星は逆行しており、465°Cの太陽系で最も暑い惑星です！' },
+                ar: { name: 'الزهرة', diameter: '١٢٬١٠٤ كم', distance: '١٠٨٫٢ مليون كم',
+                    period: '٢٢٥ يومًا', moons: '٠', fun: 'الزهرة تدور للخلف (تراجعية) وهي الكوكب الأكثر حرارة عند 465 درجة مئوية!' },
+                hi: { name: 'शुक्र', diameter: '12,104 किमी', distance: '10.82 करोड़ किमी',
+                    period: '225 दिन', moons: '0', fun: 'शुक्र पीछे की ओर घूमता है और 465°C पर सबसे गर्म ग्रह है!' }
+            }
+        }, {
+            id: 'earth',
+            color: COLORS.earth,
+            size: 0.58,
+            orbit: 11.0,
+            speed: 1.00,
+            tilt: 23.4,
+            moons: [{
+                id: 'moon',
+                color: COLORS.moon,
+                size: 0.14,
+                orbitRadius: 0.8,
+                speed: 5.0,
+                tilt: 6.7,
+                translations: {
+                    en: { name: 'Moon', diameter: '3,474 km', distance: '384,400 km',
+                        period: '27.3 days', fun: 'The Moon is Earth\'s only natural satellite and the fifth largest moon in the solar system.' },
+                    es: { name: 'Luna', diameter: '3.474 km', distance: '384.400 km',
+                        period: '27,3 días', fun: 'La Luna es el único satélite natural de la Tierra y el quinto más grande del sistema solar.' },
+                    fr: { name: 'Lune', diameter: '3 474 km', distance: '384 400 km',
+                        period: '27,3 jours', fun: 'La Lune est le seul satellite naturel de la Terre et le cinquième plus grand du système solaire.' },
+                    de: { name: 'Mond', diameter: '3.474 km', distance: '384.400 km',
+                        period: '27,3 Tage', fun: 'Der Mond ist der einzige natürliche Satellit der Erde und der fünftgrößte Mond im Sonnensystem.' },
+                    zh: { name: '月球', diameter: '3,474 km', distance: '384,400 km',
+                        period: '27.3 天', fun: '月球是地球唯一的天然卫星，也是太阳系第五大卫星。' },
+                    ja: { name: '月', diameter: '3,474 km', distance: '384,400 km',
+                        period: '27.3 日', fun: '月は地球唯一の自然衛星であり、太陽系で5番目に大きい月です。' },
+                    ar: { name: 'القمر', diameter: '٣٬٤٧٤ كم', distance: '٣٨٤٬٤٠٠ كم',
+                        period: '٢٧٫٣ يومًا', fun: 'القمر هو القمر الطبيعي الوحيد للأرض وخامس أكبر قمر في النظام الشمسي.' },
+                    hi: { name: 'चंद्रमा', diameter: '3,474 किमी', distance: '3,84,400 किमी',
+                        period: '27.3 दिन', fun: 'चंद्रमा पृथ्वी का एकमात्र प्राकृतिक उपग्रह है और सौर मंडल का पाँचवाँ सबसे बड़ा चंद्रमा है।' }
+                }
+            }],
+            translations: {
+                en: { name: 'Earth', diameter: '12,742 km', distance: '149.6 M km',
+                    period: '365.25 days', moons: '1', fun: 'Earth is the only known planet with liquid water on its surface and life!' },
+                es: { name: 'Tierra', diameter: '12.742 km', distance: '149,6 M km',
+                    period: '365,25 días', moons: '1', fun: '¡La Tierra es el único planeta conocido con agua líquida en su superficie y vida!' },
+                fr: { name: 'Terre', diameter: '12 742 km', distance: '149,6 M km',
+                    period: '365,25 jours', moons: '1', fun: 'La Terre est la seule planète connue avec de l\'eau liquide à sa surface et de la vie!' },
+                de: { name: 'Erde', diameter: '12.742 km', distance: '149,6 M km',
+                    period: '365,25 Tage', moons: '1', fun: 'Die Erde ist der einzige bekannte Planet mit flüssigem Wasser auf seiner Oberfläche und Leben!' },
+                zh: { name: '地球', diameter: '12,742 km', distance: '1.496亿 km',
+                    period: '365.25 天', moons: '1', fun: '地球是已知唯一表面有液态水并存在生命的行星！' },
+                ja: { name: '地球', diameter: '12,742 km', distance: '1.496億 km',
+                    period: '365.25 日', moons: '1', fun: '地球は表面に液体の水があり、生命が存在することが知られている唯一の惑星です！' },
+                ar: { name: 'الأرض', diameter: '١٢٬٧٤٢ كم', distance: '١٤٩٫٦ مليون كم',
+                    period: '٣٦٥٫٢٥ يومًا', moons: '١', fun: 'الأرض هي الكوكب الوحيد المعروف بوجود مياه سائلة على سطحه وحياة!' },
+                hi: { name: 'पृथ्वी', diameter: '12,742 किमी', distance: '14.96 करोड़ किमी',
+                    period: '365.25 दिन', moons: '1', fun: 'पृथ्वी एकमात्र ज्ञात ग्रह है जिसकी सतह पर तरल पानी और जीवन है!' }
+            }
+        }, {
+            id: 'mars',
+            color: COLORS.mars,
+            size: 0.42,
+            orbit: 14.0,
+            speed: 0.53,
+            tilt: 25.2,
+            moons: [{
+                id: 'phobos',
+                color: COLORS.phobos,
+                size: 0.08,
+                orbitRadius: 0.5,
+                speed: 8.0,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Phobos', diameter: '22.4 km', distance: '9,376 km',
+                        period: '0.32 days', fun: 'Phobos is the larger and closer of Mars\' two moons, and it orbits so fast that it rises in the west and sets in the east.' },
+                    es: { name: 'Fobos', diameter: '22,4 km', distance: '9.376 km',
+                        period: '0,32 días', fun: 'Fobos es la más grande y cercana de las dos lunas de Marte, y orbita tan rápido que sale por el oeste y se pone por el este.' },
+                    fr: { name: 'Phobos', diameter: '22,4 km', distance: '9 376 km',
+                        period: '0,32 jours', fun: 'Phobos est la plus grande et la plus proche des deux lunes de Mars, et elle orbite si vite qu\'elle se lève à l\'ouest et se couche à l\'est.' },
+                    de: { name: 'Phobos', diameter: '22,4 km', distance: '9.376 km',
+                        period: '0,32 Tage', fun: 'Phobos ist der größere und nähere der beiden Marsmonde und umkreist den Planeten so schnell, dass er im Westen aufgeht und im Osten untergeht.' },
+                    zh: { name: '火卫一', diameter: '22.4 km', distance: '9,376 km',
+                        period: '0.32 天', fun: '火卫一是火星两颗卫星中较大且较近的一颗，它的轨道速度极快，从西方升起，在东方落下。' },
+                    ja: { name: 'フォボス', diameter: '22.4 km', distance: '9,376 km',
+                        period: '0.32 日', fun: 'フォボスは火星の2つの衛星の中で大きくて近い方で、非常に速く軌道を回るため、西に昇り東に沈みます。' },
+                    ar: { name: 'فوبوس', diameter: '٢٢٫٤ كم', distance: '٩٬٣٧٦ كم',
+                        period: '٠٫٣٢ يومًا', fun: 'فوبوس هو الأكبر والأقرب من قمري المريخ، ويدور بسرعة كبيرة لدرجة أنه يشرق في الغرب ويغرب في الشرق.' },
+                    hi: { name: 'फोबोस', diameter: '22.4 किमी', distance: '9,376 किमी',
+                        period: '0.32 दिन', fun: 'फोबोस मंगल के दो चंद्रमाओं में बड़ा और करीब है, और यह इतनी तेजी से परिक्रमा करता है कि यह पश्चिम में उगता है और पूर्व में अस्त होता है।' }
+                }
+            }, {
+                id: 'deimos',
+                color: COLORS.deimos,
+                size: 0.06,
+                orbitRadius: 0.7,
+                speed: 6.0,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Deimos', diameter: '12.4 km', distance: '23,464 km',
+                        period: '1.26 days', fun: 'Deimos is the smaller and outer moon of Mars, and it orbits more slowly than Phobos.' },
+                    es: { name: 'Deimos', diameter: '12,4 km', distance: '23.464 km',
+                        period: '1,26 días', fun: 'Deimos es la luna más pequeña y exterior de Marte, y orbita más lentamente que Fobos.' },
+                    fr: { name: 'Deimos', diameter: '12,4 km', distance: '23 464 km',
+                        period: '1,26 jours', fun: 'Deimos est la plus petite et la plus externe des lunes de Mars, et elle orbite plus lentement que Phobos.' },
+                    de: { name: 'Deimos', diameter: '12,4 km', distance: '23.464 km',
+                        period: '1,26 Tage', fun: 'Deimos ist der kleinere und äußere Mond des Mars und umkreist den Planeten langsamer als Phobos.' },
+                    zh: { name: '火卫二', diameter: '12.4 km', distance: '23,464 km',
+                        period: '1.26 天', fun: '火卫二是火星较小且较远的卫星，它的轨道速度比火卫一慢。' },
+                    ja: { name: 'ダイモス', diameter: '12.4 km', distance: '23,464 km',
+                        period: '1.26 日', fun: 'ダイモスは火星のより小さく外側の衛星で、フォボスよりもゆっくりと軌道を回ります。' },
+                    ar: { name: 'ديموس', diameter: '١٢٫٤ كم', distance: '٢٣٬٤٦٤ كم',
+                        period: '١٫٢٦ يومًا', fun: 'ديموس هو القمر الأصغر والأبعد للمريخ، ويدور بشكل أبطأ من فوبوس.' },
+                    hi: { name: 'डीमोस', diameter: '12.4 किमी', distance: '23,464 किमी',
+                        period: '1.26 दिन', fun: 'डीमोस मंगल का छोटा और बाहरी चंद्रमा है, और यह फोबोस की तुलना में धीमी गति से परिक्रमा करता है।' }
+                }
+            }],
+            translations: {
+                en: { name: 'Mars', diameter: '6,779 km', distance: '227.9 M km',
+                    period: '687 days', moons: '2', fun: 'Olympus Mons on Mars is the tallest volcano in the solar system at 21.9 km!' },
+                es: { name: 'Marte', diameter: '6.779 km', distance: '227,9 M km',
+                    period: '687 días', moons: '2', fun: '¡El Olympus Mons en Marte es el volcán más alto del sistema solar con 21,9 km!' },
+                fr: { name: 'Mars', diameter: '6 779 km', distance: '227,9 M km',
+                    period: '687 jours', moons: '2', fun: 'Olympus Mons sur Mars est le plus haut volcan du système solaire avec 21,9 km!' },
+                de: { name: 'Mars', diameter: '6.779 km', distance: '227,9 M km',
+                    period: '687 Tage', moons: '2', fun: 'Der Olympus Mons auf dem Mars ist mit 21,9 km der höchste Vulkan im Sonnensystem!' },
+                zh: { name: '火星', diameter: '6,779 km', distance: '2.279亿 km',
+                    period: '687 天', moons: '2', fun: '火星上的奥林匹斯山是太阳系最高的火山，高达21.9公里！' },
+                ja: { name: '火星', diameter: '6,779 km', distance: '2.279億 km',
+                    period: '687 日', moons: '2', fun: '火星のオリンポス山は太陽系で最も高い火山で、高さ21.9kmです！' },
+                ar: { name: 'المريخ', diameter: '٦٬٧٧٩ كم', distance: '٢٢٧٫٩ مليون كم',
+                    period: '٦٨٧ يومًا', moons: '٢', fun: 'أوليمبوس مونس على المريخ هو أعلى بركان في النظام الشمسي بارتفاع 21.9 كم!' },
+                hi: { name: 'मंगल', diameter: '6,779 किमी', distance: '22.79 करोड़ किमी',
+                    period: '687 दिन', moons: '2', fun: 'मंगल पर ओलंपस मॉन्स 21.9 किमी ऊंचा सौर मंडल का सबसे ऊंचा ज्वालामुखी है!' }
+            }
+        }, {
+            id: 'jupiter',
+            color: COLORS.jupiter,
+            size: 1.10,
+            orbit: 18.5,
+            speed: 0.08,
+            tilt: 3.1,
+            moons: [{
+                id: 'io',
+                color: COLORS.io,
+                size: 0.16,
+                orbitRadius: 1.2,
+                speed: 6.0,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Io', diameter: '3,643 km', distance: '421,800 km',
+                        period: '1.77 days', fun: 'Io is the most volcanically active body in the solar system, with hundreds of volcanoes.' },
+                    es: { name: 'Ío', diameter: '3.643 km', distance: '421.800 km',
+                        period: '1,77 días', fun: 'Ío es el cuerpo con mayor actividad volcánica del sistema solar, con cientos de volcanes.' },
+                    fr: { name: 'Io', diameter: '3 643 km', distance: '421 800 km',
+                        period: '1,77 jours', fun: 'Io est le corps le plus volcaniquement actif du système solaire, avec des centaines de volcans.' },
+                    de: { name: 'Io', diameter: '3.643 km', distance: '421.800 km',
+                        period: '1,77 Tage', fun: 'Io ist der vulkanisch aktivste Körper im Sonnensystem mit Hunderten von Vulkanen.' },
+                    zh: { name: '木卫一', diameter: '3,643 km', distance: '421,800 km',
+                        period: '1.77 天', fun: '木卫一是太阳系中火山活动最活跃的天体，拥有数百座火山。' },
+                    ja: { name: 'イオ', diameter: '3,643 km', distance: '421,800 km',
+                        period: '1.77 日', fun: 'イオは太陽系で最も火山活動が活発な天体で、数百の火山があります。' },
+                    ar: { name: 'آيو', diameter: '٣٬٦٤٣ كم', distance: '٤٢١٬٨٠٠ كم',
+                        period: '١٫٧٧ يومًا', fun: 'آيو هو الجسم الأكثر نشاطًا بركانيًا في النظام الشمسي، مع مئات البراكين.' },
+                    hi: { name: 'आयो', diameter: '3,643 किमी', distance: '4,21,800 किमी',
+                        period: '1.77 दिन', fun: 'आयो सौर मंडल में सबसे अधिक ज्वालामुखीय रूप से सक्रिय पिंड है, जिसमें सैकड़ों ज्वालामुखी हैं।' }
+                }
+            }, {
+                id: 'europa',
+                color: COLORS.europa,
+                size: 0.14,
+                orbitRadius: 1.5,
+                speed: 4.5,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Europa', diameter: '3,122 km', distance: '671,100 km',
+                        period: '3.55 days', fun: 'Europa is believed to have a subsurface ocean of liquid water, making it a prime target for life.' },
+                    es: { name: 'Europa', diameter: '3.122 km', distance: '671.100 km',
+                        period: '3,55 días', fun: 'Se cree que Europa tiene un océano subterráneo de agua líquida, lo que lo convierte en un objetivo principal para la vida.' },
+                    fr: { name: 'Europe', diameter: '3 122 km', distance: '671 100 km',
+                        period: '3,55 jours', fun: 'On pense qu\'Europe possède un océan souterrain d\'eau liquide, ce qui en fait une cible privilégiée pour la vie.' },
+                    de: { name: 'Europa', diameter: '3.122 km', distance: '671.100 km',
+                        period: '3,55 Tage', fun: 'Es wird angenommen, dass Europa einen unterirdischen Ozean aus flüssigem Wasser hat, was es zu einem Hauptziel für Leben macht.' },
+                    zh: { name: '木卫二', diameter: '3,122 km', distance: '671,100 km',
+                        period: '3.55 天', fun: '木卫二被认为拥有液态水的地下海洋，是寻找生命的主要目标。' },
+                    ja: { name: 'エウロパ', diameter: '3,122 km', distance: '671,100 km',
+                        period: '3.55 日', fun: 'エウロパは液体の水の地下海を持つと考えられており、生命の主要なターゲットとなっています。' },
+                    ar: { name: 'أوروبا', diameter: '٣٬١٢٢ كم', distance: '٦٧١٬١٠٠ كم',
+                        period: '٣٫٥٥ يومًا', fun: 'يُعتقد أن أوروبا تحتوي على محيط تحت سطح الأرض من الماء السائل، مما يجعله هدفًا رئيسيًا للبحث عن الحياة.' },
+                    hi: { name: 'यूरोपा', diameter: '3,122 किमी', distance: '6,71,100 किमी',
+                        period: '3.55 दिन', fun: 'यूरोपा में तरल पानी का एक उपसतह महासागर माना जाता है, जो इसे जीवन के लिए एक प्रमुख लक्ष्य बनाता है।' }
+                }
+            }, {
+                id: 'ganymede',
+                color: COLORS.ganymede,
+                size: 0.18,
+                orbitRadius: 1.9,
+                speed: 3.2,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Ganymede', diameter: '5,268 km', distance: '1,070,400 km',
+                        period: '7.15 days', fun: 'Ganymede is the largest moon in the solar system, even bigger than Mercury.' },
+                    es: { name: 'Ganímedes', diameter: '5.268 km', distance: '1.070.400 km',
+                        period: '7,15 días', fun: 'Ganímedes es la luna más grande del sistema solar, incluso más grande que Mercurio.' },
+                    fr: { name: 'Ganymède', diameter: '5 268 km', distance: '1 070 400 km',
+                        period: '7,15 jours', fun: 'Ganymède est la plus grande lune du système solaire, encore plus grande que Mercure.' },
+                    de: { name: 'Ganymed', diameter: '5.268 km', distance: '1.070.400 km',
+                        period: '7,15 Tage', fun: 'Ganymed ist der größte Mond im Sonnensystem, sogar größer als Merkur.' },
+                    zh: { name: '木卫三', diameter: '5,268 km', distance: '1,070,400 km',
+                        period: '7.15 天', fun: '木卫三是太阳系中最大的卫星，甚至比水星还大。' },
+                    ja: { name: 'ガニメデ', diameter: '5,268 km', distance: '1,070,400 km',
+                        period: '7.15 日', fun: 'ガニメデは太陽系で最大の衛星で、水星よりも大きいです。' },
+                    ar: { name: 'غانيميد', diameter: '٥٬٢٦٨ كم', distance: '١٬٠٧٠٬٤٠٠ كم',
+                        period: '٧٫١٥ يومًا', fun: 'غانيميد هو أكبر قمر في النظام الشمسي، حتى أنه أكبر من عطارد.' },
+                    hi: { name: 'गैनीमीड', diameter: '5,268 किमी', distance: '10,70,400 किमी',
+                        period: '7.15 दिन', fun: 'गैनीमीड सौर मंडल का सबसे बड़ा चंद्रमा है, जो बुध से भी बड़ा है।' }
+                }
+            }, {
+                id: 'callisto',
+                color: COLORS.callisto,
+                size: 0.16,
+                orbitRadius: 2.3,
+                speed: 2.1,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Callisto', diameter: '4,821 km', distance: '1,882,700 km',
+                        period: '16.69 days', fun: 'Callisto is heavily cratered and is thought to have a subsurface ocean as well.' },
+                    es: { name: 'Calisto', diameter: '4.821 km', distance: '1.882.700 km',
+                        period: '16,69 días', fun: 'Calisto está muy craterizada y se cree que también tiene un océano subterráneo.' },
+                    fr: { name: 'Callisto', diameter: '4 821 km', distance: '1 882 700 km',
+                        period: '16,69 jours', fun: 'Callisto est fortement cratérisée et on pense qu\'elle possède également un océan souterrain.' },
+                    de: { name: 'Callisto', diameter: '4.821 km', distance: '1.882.700 km',
+                        period: '16,69 Tage', fun: 'Callisto ist stark verkratert und soll ebenfalls einen unterirdischen Ozean haben.' },
+                    zh: { name: '木卫四', diameter: '4,821 km', distance: '1,882,700 km',
+                        period: '16.69 天', fun: '木卫四表面布满陨石坑，也被认为拥有地下海洋。' },
+                    ja: { name: 'カリスト', diameter: '4,821 km', distance: '1,882,700 km',
+                        period: '16.69 日', fun: 'カリストは激しいクレーターがあり、地下海も持っていると考えられています。' },
+                    ar: { name: 'كاليستو', diameter: '٤٬٨٢١ كم', distance: '١٬٨٨٢٬٧٠٠ كم',
+                        period: '١٦٫٦٩ يومًا', fun: 'كاليستو مليئة بالفوهات ويعتقد أن لها محيطًا تحت سطح الأرض أيضًا.' },
+                    hi: { name: 'कैलिस्टो', diameter: '4,821 किमी', distance: '18,82,700 किमी',
+                        period: '16.69 दिन', fun: 'कैलिस्टो भारी रूप से क्रेटरयुक्त है और माना जाता है कि इसमें एक उपसतह महासागर भी है।' }
+                }
+            }],
+            translations: {
+                en: { name: 'Jupiter', diameter: '139,820 km', distance: '778.5 M km',
+                    period: '11.86 years', moons: '95', fun: 'Jupiter\'s Great Red Spot is a storm larger than Earth that has raged for centuries!' },
+                es: { name: 'Júpiter', diameter: '139.820 km', distance: '778,5 M km',
+                    period: '11,86 años', moons: '95', fun: '¡La Gran Mancha Roja de Júpiter es una tormenta más grande que la Tierra que ha durado siglos!' },
+                fr: { name: 'Jupiter', diameter: '139 820 km', distance: '778,5 M km',
+                    period: '11,86 ans', moons: '95', fun: 'La Grande Tache Rouge de Jupiter est une tempête plus grande que la Terre qui dure depuis des siècles!' },
+                de: { name: 'Jupiter', diameter: '139.820 km', distance: '778,5 M km',
+                    period: '11,86 Jahre', moons: '95', fun: 'Der Große Rote Fleck auf Jupiter ist ein Sturm, der größer als die Erde ist und seit Jahrhunderten tobt!' },
+                zh: { name: '木星', diameter: '139,820 km', distance: '7.785亿 km',
+                    period: '11.86 年', moons: '95', fun: '木星的大红斑是一个比地球还大的风暴，已经持续肆虐了几个世纪！' },
+                ja: { name: '木星', diameter: '139,820 km', distance: '7.785億 km',
+                    period: '11.86 年', moons: '95', fun: '木星の大赤斑は地球よりも大きな嵐で、何世紀にもわたって猛威を振るっています！' },
+                ar: { name: 'المشتري', diameter: '١٣٩٬٨٢٠ كم', distance: '٧٧٨٫٥ مليون كم',
+                    period: '١١٫٨٦ سنة', moons: '٩٥', fun: 'البقعة الحمراء العظيمة على المشتري هي عاصفة أكبر من الأرض استمرت لقرون!' },
+                hi: { name: 'बृहस्पति', diameter: '139,820 किमी', distance: '77.85 करोड़ किमी',
+                    period: '11.86 साल', moons: '95', fun: 'बृहस्पति का ग्रेट रेड स्पॉट पृथ्वी से भी बड़ा एक तूफान है जो सदियों से भड़का हुआ है!' }
+            }
+        }, {
+            id: 'saturn',
+            color: COLORS.saturn,
+            size: 0.95,
+            orbit: 23.5,
+            speed: 0.03,
+            tilt: 26.7,
+            moons: [{
+                id: 'titan',
+                color: COLORS.titan,
+                size: 0.18,
+                orbitRadius: 1.6,
+                speed: 2.8,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Titan', diameter: '5,150 km', distance: '1,221,870 km',
+                        period: '15.95 days', fun: 'Titan is the only moon with a dense atmosphere and is thought to have liquid methane lakes.' },
+                    es: { name: 'Titán', diameter: '5.150 km', distance: '1.221.870 km',
+                        period: '15,95 días', fun: 'Titán es la única luna con una atmósfera densa y se cree que tiene lagos de metano líquido.' },
+                    fr: { name: 'Titan', diameter: '5 150 km', distance: '1 221 870 km',
+                        period: '15,95 jours', fun: 'Titan est la seule lune avec une atmosphère dense et on pense qu\'elle possède des lacs de méthane liquide.' },
+                    de: { name: 'Titan', diameter: '5.150 km', distance: '1.221.870 km',
+                        period: '15,95 Tage', fun: 'Titan ist der einzige Mond mit einer dichten Atmosphäre und soll flüssige Methanseen haben.' },
+                    zh: { name: '土卫六', diameter: '5,150 km', distance: '1,221,870 km',
+                        period: '15.95 天', fun: '土卫六是唯一拥有浓密大气层的卫星，被认为有液态甲烷湖泊。' },
+                    ja: { name: 'タイタン', diameter: '5,150 km', distance: '1,221,870 km',
+                        period: '15.95 日', fun: 'タイタンは濃い大気を持つ唯一の衛星であり、液体メタンの湖があると考えられています。' },
+                    ar: { name: 'تيتان', diameter: '٥٬١٥٠ كم', distance: '١٬٢٢١٬٨٧٠ كم',
+                        period: '١٥٫٩٥ يومًا', fun: 'تيتان هو القمر الوحيد ذو الغلاف الجوي الكثيف، ويُعتقد أن له بحيرات من الميثان السائل.' },
+                    hi: { name: 'टाइटन', diameter: '5,150 किमी', distance: '12,21,870 किमी',
+                        period: '15.95 दिन', fun: 'टाइटन एकमात्र चंद्रमा है जिसमें घना वायुमंडल है और माना जाता है कि इसमें तरल मीथेन की झीलें हैं।' }
+                }
+            }, {
+                id: 'enceladus',
+                color: COLORS.enceladus,
+                size: 0.10,
+                orbitRadius: 1.0,
+                speed: 4.2,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Enceladus', diameter: '504 km', distance: '238,040 km',
+                        period: '1.37 days', fun: 'Enceladus has geysers that spray water vapor and ice into space, hinting at a subsurface ocean.' },
+                    es: { name: 'Encélado', diameter: '504 km', distance: '238.040 km',
+                        period: '1,37 días', fun: 'Encélado tiene géiseres que expulsan vapor de agua y hielo al espacio, lo que sugiere un océano subterráneo.' },
+                    fr: { name: 'Encelade', diameter: '504 km', distance: '238 040 km',
+                        period: '1,37 jours', fun: 'Encelade a des geysers qui projettent de la vapeur d\'eau et de la glace dans l\'espace, suggérant un océan souterrain.' },
+                    de: { name: 'Enceladus', diameter: '504 km', distance: '238.040 km',
+                        period: '1,37 Tage', fun: 'Enceladus hat Geysire, die Wasserdampf und Eis in den Weltraum ausstoßen, was auf einen unterirdischen Ozean hindeutet.' },
+                    zh: { name: '土卫二', diameter: '504 km', distance: '238,040 km',
+                        period: '1.37 天', fun: '土卫二有喷泉向太空喷出水蒸气和冰，暗示着地下海洋的存在。' },
+                    ja: { name: 'エンケラドス', diameter: '504 km', distance: '238,040 km',
+                        period: '1.37 日', fun: 'エンケラドスには水蒸気と氷を宇宙に噴出する間欠泉があり、地下海の存在を示唆しています。' },
+                    ar: { name: 'إنسيلادوس', diameter: '٥٠٤ كم', distance: '٢٣٨٬٠٤٠ كم',
+                        period: '١٫٣٧ يومًا', fun: 'إنسيلادوس يحتوي على ينابيع حارة تنفث بخار الماء والجليد في الفضاء، مما يشير إلى وجود محيط تحت سطح الأرض.' },
+                    hi: { name: 'एन्सेलाडस', diameter: '504 किमी', distance: '2,38,040 किमी',
+                        period: '1.37 दिन', fun: 'एन्सेलाडस में गीजर हैं जो अंतरिक्ष में जल वाष्प और बर्फ छोड़ते हैं, जो एक उपसतह महासागर का संकेत देते हैं।' }
+                }
+            }],
+            translations: {
+                en: { name: 'Saturn', diameter: '116,460 km', distance: '1.43 B km',
+                    period: '29.46 years', moons: '146', fun: 'Saturn\'s density is so low it would float in water, and its rings span over 280,000 km!' },
+                es: { name: 'Saturno', diameter: '116.460 km', distance: '1,43 B km',
+                    period: '29,46 años', moons: '146', fun: '¡La densidad de Saturno es tan baja que flotaría en agua, y sus anillos abarcan más de 280.000 km!' },
+                fr: { name: 'Saturne', diameter: '116 460 km', distance: '1,43 B km',
+                    period: '29,46 ans', moons: '146', fun: 'La densité de Saturne est si faible qu\'elle flotterait dans l\'eau, et ses anneaux s\'étendent sur plus de 280 000 km!' },
+                de: { name: 'Saturn', diameter: '116.460 km', distance: '1,43 Mrd km',
+                    period: '29,46 Jahre', moons: '146', fun: 'Die Dichte des Saturn ist so gering, dass er im Wasser schwimmen würde, und seine Ringe erstrecken sich über 280.000 km!' },
+                zh: { name: '土星', diameter: '116,460 km', distance: '14.3亿 km',
+                    period: '29.46 年', moons: '146', fun: '土星的密度很低，会漂浮在水上，其光环跨度超过28万公里！' },
+                ja: { name: '土星', diameter: '116,460 km', distance: '14.3億 km',
+                    period: '29.46 年', moons: '146', fun: '土星の密度は非常に低く、水に浮かび、環は28万km以上に及びます！' },
+                ar: { name: 'زحل', diameter: '١١٦٬٤٦٠ كم', distance: '١٫٤٣ مليار كم',
+                    period: '٢٩٫٤٦ سنة', moons: '١٤٦', fun: 'كثافة زحل منخفضة جدًا لدرجة أنه يطفو على الماء، وتمتد حلقاته لأكثر من 280 ألف كم!' },
+                hi: { name: 'शनि', diameter: '116,460 किमी', distance: '143 करोड़ किमी',
+                    period: '29.46 साल', moons: '146', fun: 'शनि का घनत्व इतना कम है कि यह पानी में तैरता है, और इसके छल्ले 280,000 किमी से अधिक फैले हैं!' }
+            }
+        }, {
+            id: 'uranus',
+            color: COLORS.uranus,
+            size: 0.70,
+            orbit: 29.0,
+            speed: 0.01,
+            tilt: 97.8,
+            moons: [{
+                id: 'miranda',
+                color: COLORS.miranda,
+                size: 0.09,
+                orbitRadius: 0.8,
+                speed: 5.4,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Miranda', diameter: '472 km', distance: '129,390 km',
+                        period: '1.41 days', fun: 'Miranda has some of the most extreme terrain in the solar system, with canyons 20 km deep.' },
+                    es: { name: 'Miranda', diameter: '472 km', distance: '129.390 km',
+                        period: '1,41 días', fun: 'Miranda tiene algunos de los terrenos más extremos del sistema solar, con cañones de 20 km de profundidad.' },
+                    fr: { name: 'Miranda', diameter: '472 km', distance: '129 390 km',
+                        period: '1,41 jours', fun: 'Miranda possède certains des terrains les plus extrêmes du système solaire, avec des canyons de 20 km de profondeur.' },
+                    de: { name: 'Miranda', diameter: '472 km', distance: '129.390 km',
+                        period: '1,41 Tage', fun: 'Miranda hat einige der extremsten Gelände des Sonnensystems mit Schluchten von 20 km Tiefe.' },
+                    zh: { name: '天卫五', diameter: '472 km', distance: '129,390 km',
+                        period: '1.41 天', fun: '天卫五拥有太阳系中最极端的地形之一，峡谷深达20公里。' },
+                    ja: { name: 'ミランダ', diameter: '472 km', distance: '129,390 km',
+                        period: '1.41 日', fun: 'ミランダには太陽系で最も極端な地形の一部があり、深さ20kmの峡谷があります。' },
+                    ar: { name: 'ميراندا', diameter: '٤٧٢ كم', distance: '١٢٩٬٣٩٠ كم',
+                        period: '١٫٤١ يومًا', fun: 'ميراندا لديها بعض من أشد التضاريس في النظام الشمسي، مع أخاديد عمقها 20 كم.' },
+                    hi: { name: 'मिरांडा', diameter: '472 किमी', distance: '1,29,390 किमी',
+                        period: '1.41 दिन', fun: 'मिरांडा में सौर मंडल के सबसे चरम इलाकों में से कुछ हैं, जिसमें 20 किमी गहरी घाटियाँ हैं।' }
+                }
+            }],
+            translations: {
+                en: { name: 'Uranus', diameter: '50,724 km', distance: '2.87 B km',
+                    period: '84.01 years', moons: '27', fun: 'Uranus rotates on its side with an axial tilt of 98°, making it the most tilted planet!' },
+                es: { name: 'Urano', diameter: '50.724 km', distance: '2,87 B km',
+                    period: '84,01 años', moons: '27', fun: '¡Urano rota de lado con una inclinación axial de 98°, lo que lo convierte en el planeta más inclinado!' },
+                fr: { name: 'Uranus', diameter: '50 724 km', distance: '2,87 B km',
+                    period: '84,01 ans', moons: '27', fun: 'Uranus tourne sur le côté avec une inclinaison axiale de 98°, ce qui en fait la planète la plus inclinée!' },
+                de: { name: 'Uranus', diameter: '50.724 km', distance: '2,87 Mrd km',
+                    period: '84,01 Jahre', moons: '27', fun: 'Uranus rotiert mit einer axialen Neigung von 98° auf der Seite und ist damit der am stärksten geneigte Planet!' },
+                zh: { name: '天王星', diameter: '50,724 km', distance: '28.7亿 km',
+                    period: '84.01 年', moons: '27', fun: '天王星以98°的轴倾角侧向自转，是倾斜角度最大的行星！' },
+                ja: { name: '天王星', diameter: '50,724 km', distance: '28.7億 km',
+                    period: '84.01 年', moons: '27', fun: '天王星は軸傾斜が98°で横向きに回転しており、最も傾いた惑星です！' },
+                ar: { name: 'أورانوس', diameter: '٥٠٬٧٢٤ كم', distance: '٢٫٨٧ مليار كم',
+                    period: '٨٤٫٠١ سنة', moons: '٢٧', fun: 'أورانوس يدور على جانبه بميل محوري 98°، مما يجعله الكوكب الأكثر ميلانًا!' },
+                hi: { name: 'अरुण', diameter: '50,724 किमी', distance: '287 करोड़ किमी',
+                    period: '84.01 साल', moons: '27', fun: 'अरुण 98° के अक्षीय झुकाव के साथ अपनी तरफ घूमता है, जो इसे सबसे झुका हुआ ग्रह बनाता है!' }
+            }
+        }, {
+            id: 'neptune',
+            color: COLORS.neptune,
+            size: 0.68,
+            orbit: 34.0,
+            speed: 0.006,
+            tilt: 28.3,
+            moons: [{
+                id: 'triton',
+                color: COLORS.triton,
+                size: 0.12,
+                orbitRadius: 0.9,
+                speed: 2.5,
+                tilt: 0,
+                translations: {
+                    en: { name: 'Triton', diameter: '2,707 km', distance: '354,759 km',
+                        period: '5.88 days', fun: 'Triton is Neptune\'s largest moon and orbits in the opposite direction of its planet\'s rotation.' },
+                    es: { name: 'Tritón', diameter: '2.707 km', distance: '354.759 km',
+                        period: '5,88 días', fun: 'Tritón es la luna más grande de Neptuno y orbita en dirección opuesta a la rotación de su planeta.' },
+                    fr: { name: 'Triton', diameter: '2 707 km', distance: '354 759 km',
+                        period: '5,88 jours', fun: 'Triton est la plus grande lune de Neptune et orbite dans le sens opposé à la rotation de sa planète.' },
+                    de: { name: 'Triton', diameter: '2.707 km', distance: '354.759 km',
+                        period: '5,88 Tage', fun: 'Triton ist der größte Mond des Neptun und umkreist den Planeten in entgegengesetzter Richtung zu seiner Rotation.' },
+                    zh: { name: '海卫一', diameter: '2,707 km', distance: '354,759 km',
+                        period: '5.88 天', fun: '海卫一是海王星最大的卫星，其公转方向与行星自转方向相反。' },
+                    ja: { name: 'トリトン', diameter: '2,707 km', distance: '354,759 km',
+                        period: '5.88 日', fun: 'トリトンは海王星最大の衛星で、惑星の自転とは反対方向に軌道を回っています。' },
+                    ar: { name: 'تريتون', diameter: '٢٬٧٠٧ كم', distance: '٣٥٤٬٧٥٩ كم',
+                        period: '٥٫٨٨ يومًا', fun: 'تريتون هو أكبر قمر لنبتون ويدور في اتجاه معاكس لدوران كوكبه.' },
+                    hi: { name: 'ट्राइटन', diameter: '2,707 किमी', distance: '3,54,759 किमी',
+                        period: '5.88 दिन', fun: 'ट्राइटन नेपच्यून का सबसे बड़ा चंद्रमा है और अपने ग्रह के घूर्णन की विपरीत दिशा में परिक्रमा करता है।' }
+                }
+            }],
+            translations: {
+                en: { name: 'Neptune', diameter: '49,244 km', distance: '4.50 B km',
+                    period: '164.8 years', moons: '16', fun: 'Neptune has the strongest winds in the solar system, reaching speeds of 2,100 km/h!' },
+                es: { name: 'Neptuno', diameter: '49.244 km', distance: '4,50 B km',
+                    period: '164,8 años', moons: '16', fun: '¡Neptuno tiene los vientos más fuertes del sistema solar, alcanzando velocidades de 2.100 km/h!' },
+                fr: { name: 'Neptune', diameter: '49 244 km', distance: '4,50 B km',
+                    period: '164,8 ans', moons: '16', fun: 'Neptune a les vents les plus forts du système solaire, atteignant des vitesses de 2 100 km/h!' },
+                de: { name: 'Neptun', diameter: '49.244 km', distance: '4,50 Mrd km',
+                    period: '164,8 Jahre', moons: '16', fun: 'Neptun hat die stärksten Winde im Sonnensystem mit Geschwindigkeiten von bis zu 2.100 km/h!' },
+                zh: { name: '海王星', diameter: '49,244 km', distance: '45.0亿 km',
+                    period: '164.8 年', moons: '16', fun: '海王星拥有太阳系中最强的风，风速高达2,100公里/小时！' },
+                ja: { name: '海王星', diameter: '49,244 km', distance: '45.0億 km',
+                    period: '164.8 年', moons: '16', fun: '海王星は太陽系で最も強い風を持ち、時速2,100kmに達します！' },
+                ar: { name: 'نبتون', diameter: '٤٩٬٢٤٤ كم', distance: '٤٫٥٠ مليار كم',
+                    period: '١٦٤٫٨ سنة', moons: '١٦', fun: 'نبتون لديه أقوى رياح في النظام الشمسي، تصل سرعتها إلى 2,100 كم / ساعة!' },
+                hi: { name: 'वरुण', diameter: '49,244 किमी', distance: '450 करोड़ किमी',
+                    period: '164.8 साल', moons: '16', fun: 'वरुण में सौर मंडल की सबसे तेज़ हवाएं हैं, जो 2,100 किमी/घंटा की गति तक पहुंचती हैं!' }
+            }
+        }];
+
+        // ================================================================
+        //  STATE
+        // ================================================================
+        let currentLang = 'en';
+        let selectedItemId = null;
+        let selectedType = null;
+        let orbitSpeed = 1.0;
+        let time = 0;
+        const clock = new THREE.Clock();
+        const textureLoader = new THREE.TextureLoader();
+
+        // ================================================================
+        //  THREE.JS SETUP
+        // ================================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(18, 14, 28);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        container.appendChild(labelRenderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 2.5;
+        controls.maxDistance = 80;
+        controls.target.set(0, 0, 0);
+
+        // ================================================================
+        //  TEXTURE URLS (NASA / real planetary maps)
+        // ================================================================
+        // Based on public NASA textures from solarsystemscope.com and oregonstate.edu
+        // All textures are equirectangular projections, CC0 / public domain
+        const TEXTURE_URLS = {
+            mercury: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/mercury.bmp',
+            venus: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/venus.bmp',
+            earth: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/earth.bmp',
+            mars: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/mars.bmp',
+            jupiter: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/jupiter.bmp',
+            saturn: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/saturn.bmp',
+            uranus: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/uranus.bmp',
+            neptune: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/neptune.bmp',
+            moon: 'https://web.engr.oregonstate.edu/~mjb/cs550/Projects/Planets/moon.bmp',
+            // High-res Saturn rings from solarsystemscope.com
+            saturn_rings: 'https://www.solarsystemscope.com/textures/download/2k_saturn_ring_alpha.png',
+        };
+
+        // ================================================================
+        //  LIGHTING
+        // ================================================================
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.35);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.PointLight(0xffeedd, 3.0, 100);
+        sunLight.position.set(0, 0, 0);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+
+        const rimLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+        rimLight.position.set(-10, 20, -10);
+        scene.add(rimLight);
+
+        // ================================================================
+        //  STARFIELD
+        // ================================================================
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 15000;
+        const starPos = new Float32Array(starsCount * 3);
+        const starColors = new Float32Array(starsCount * 3);
+        const starSizes = new Float32Array(starsCount);
+        for (let i = 0; i < starsCount; i++) {
+            const r = 150 + Math.random() * 350;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            starPos[i * 3 + 1] = r * Math.cos(phi);
+            starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+            const colorVal = 0.5 + Math.random() * 0.5;
+            starColors[i * 3] = colorVal;
+            starColors[i * 3 + 1] = colorVal * (0.7 + Math.random() * 0.3);
+            starColors[i * 3 + 2] = colorVal * (0.6 + Math.random() * 0.4);
+            starSizes[i] = 0.2 + Math.random() * 0.8;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        starsGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+        starsGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        const starMaterial = new THREE.PointsMaterial({
+            size: 0.3,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            vertexColors: true,
+        });
+        const stars = new THREE.Points(starsGeometry, starMaterial);
+        scene.add(stars);
+
+        // ================================================================
+        //  SUN
+        // ================================================================
+        const sunGeometry = new THREE.SphereGeometry(2.8, 64, 64);
+        const sunMaterial = new THREE.MeshStandardMaterial({
+            color: 0xfdb813,
+            emissive: 0xfdb813,
+            emissiveIntensity: 2.5,
+            roughness: 0.3,
+            metalness: 0.0,
+        });
+        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        sun.castShadow = true;
+        scene.add(sun);
+
+        // Sun glow
+        const glowCanvas = document.createElement('canvas');
+        glowCanvas.width = 512;
+        glowCanvas.height = 512;
+        const gCtx = glowCanvas.getContext('2d');
+        const gradient = gCtx.createRadialGradient(256, 256, 0, 256, 256, 256);
+        gradient.addColorStop(0, 'rgba(255,220,150,1.0)');
+        gradient.addColorStop(0.1, 'rgba(255,200,100,0.8)');
+        gradient.addColorStop(0.4, 'rgba(255,160,50,0.4)');
+        gradient.addColorStop(0.7, 'rgba(255,100,20,0.15)');
+        gradient.addColorStop(1, 'rgba(255,50,0,0)');
+        gCtx.fillStyle = gradient;
+        gCtx.fillRect(0, 0, 512, 512);
+        const glowTexture = new THREE.CanvasTexture(glowCanvas);
+
+        const glowSprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: glowTexture, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.7 })
+        );
+        glowSprite.scale.set(16, 16, 1);
+        scene.add(glowSprite);
+
+        // ================================================================
+        //  PLANETS & MOONS with REAL textures
+        // ================================================================
+        const planetObjects = [];
+        const allClickables = [];
+
+        function createLabel(text, offsetY = 0.5) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.style.color = '#fff';
+            div.style.fontSize = '10px';
+            div.style.fontWeight = '500';
+            div.style.textShadow = '0 0 20px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.8)';
+            div.style.letterSpacing = '0.04em';
+            div.style.background = 'rgba(0,0,0,0.4)';
+            div.style.padding = '1px 8px';
+            div.style.borderRadius = '10px';
+            div.style.backdropFilter = 'blur(4px)';
+            div.style.border = '1px solid rgba(255,255,255,0.05)';
+            div.style.fontFamily = "'Segoe UI', system-ui, sans-serif";
+            div.style.pointerEvents = 'none';
+            div.style.transition = 'opacity 0.3s';
+            const label = new CSS2DObject(div);
+            label.position.set(0, offsetY, 0);
+            return label;
+        }
+
+        // Load textures and build planets
+        PLANET_DATA.forEach((pData, idx) => {
+            const size = pData.size;
+            const texUrl = TEXTURE_URLS[pData.id];
+            const texture = textureLoader.load(texUrl);
+
+            const mat = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.6,
+                metalness: 0.1,
+                emissive: pData.color,
+                emissiveIntensity: 0.03,
+            });
+            const geo = new THREE.SphereGeometry(size, 64, 64);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData.id = pData.id;
+            mesh.userData.type = 'planet';
+            mesh.userData.planetId = pData.id;
+            mesh.userData.size = size;
+            const initAngle = (idx / PLANET_DATA.length) * Math.PI * 2;
+            mesh.position.x = pData.orbit * Math.cos(initAngle);
+            mesh.position.z = pData.orbit * Math.sin(initAngle);
+            if (pData.tilt) {
+                mesh.rotation.z = THREE.MathUtils.degToRad(pData.tilt);
+            }
+            scene.add(mesh);
+            allClickables.push(mesh);
+
+            // Label
+            const labelDiv = document.createElement('div');
+            labelDiv.textContent = pData.translations.en.name;
+            labelDiv.style.color = '#fff';
+            labelDiv.style.fontSize = '11px';
+            labelDiv.style.fontWeight = '500';
+            labelDiv.style.textShadow = '0 0 20px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.8)';
+            labelDiv.style.letterSpacing = '0.04em';
+            labelDiv.style.background = 'rgba(0,0,0,0.4)';
+            labelDiv.style.padding = '2px 10px';
+            labelDiv.style.borderRadius = '12px';
+            labelDiv.style.backdropFilter = 'blur(4px)';
+            labelDiv.style.border = '1px solid rgba(255,255,255,0.06)';
+            labelDiv.style.fontFamily = "'Segoe UI', system-ui, sans-serif";
+            labelDiv.style.pointerEvents = 'none';
+            labelDiv.style.transition = 'opacity 0.3s';
+            const label = new CSS2DObject(labelDiv);
+            label.position.set(0, size + 0.5, 0);
+            mesh.add(label);
+
+            // Saturn rings with real texture
+            if (pData.id === 'saturn') {
+                const ringTex = textureLoader.load(TEXTURE_URLS.saturn_rings);
+                const ringGeo = new THREE.RingGeometry(1.3, 2.4, 128);
+                // Adjust UVs for ring texture
+                const pos = ringGeo.attributes.position;
+                const uv = ringGeo.attributes.uv;
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const z = pos.getZ(i);
+                    const dist = Math.sqrt(x * x + z * z);
+                    uv.setXY(i, (dist - 1.3) / (2.4 - 1.3), 0.5);
+                }
+                const ringMat = new THREE.MeshStandardMaterial({
+                    map: ringTex,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.85,
+                    roughness: 0.9,
+                    metalness: 0.0,
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2.4;
+                ring.position.y = 0;
+                ring.receiveShadow = true;
+                mesh.add(ring);
+            }
+
+            // Atmosphere glow for Earth and Venus
+            if (pData.id === 'earth' || pData.id === 'venus') {
+                const atmoGeo = new THREE.SphereGeometry(size * 1.02, 48, 48);
+                const atmoMat = new THREE.MeshBasicMaterial({
+                    color: pData.id === 'earth' ? 0x4488ff : 0xffaa66,
+                    transparent: true,
+                    opacity: 0.12,
+                    side: THREE.BackSide,
+                });
+                const atmo = new THREE.Mesh(atmoGeo, atmoMat);
+                mesh.add(atmo);
+            }
+
+            // Moons
+            const moonMeshes = [];
+            pData.moons.forEach((mData, mi) => {
+                const mSize = mData.size;
+                const mTexUrl = TEXTURE_URLS.moon; // Use moon texture for all moons (NASA moon map)
+                const mTex = textureLoader.load(mTexUrl);
+                const mMat = new THREE.MeshStandardMaterial({
+                    map: mTex,
+                    roughness: 0.8,
+                    metalness: 0.0,
+                    emissive: mData.color,
+                    emissiveIntensity: 0.02,
+                });
+                const mGeo = new THREE.SphereGeometry(mSize, 32, 32);
+                const mMesh = new THREE.Mesh(mGeo, mMat);
+                mMesh.castShadow = true;
+                mMesh.receiveShadow = true;
+                mMesh.userData.id = mData.id;
+                mMesh.userData.type = 'moon';
+                mMesh.userData.planetId = pData.id;
+                mMesh.userData.moonId = mData.id;
+                mMesh.userData.size = mSize;
+                mMesh.position.set(mData.orbitRadius, 0, 0);
+                mesh.add(mMesh);
+                allClickables.push(mMesh);
+
+                const mLabelDiv = document.createElement('div');
+                mLabelDiv.textContent = mData.translations.en.name;
+                mLabelDiv.style.color = '#ccc';
+                mLabelDiv.style.fontSize = '8px';
+                mLabelDiv.style.fontWeight = '400';
+                mLabelDiv.style.textShadow = '0 0 12px rgba(0,0,0,0.9)';
+                mLabelDiv.style.background = 'rgba(0,0,0,0.3)';
+                mLabelDiv.style.padding = '1px 6px';
+                mLabelDiv.style.borderRadius = '8px';
+                mLabelDiv.style.backdropFilter = 'blur(2px)';
+                mLabelDiv.style.border = '1px solid rgba(255,255,255,0.04)';
+                mLabelDiv.style.fontFamily = "'Segoe UI', system-ui, sans-serif";
+                mLabelDiv.style.pointerEvents = 'none';
+                const mLabel = new CSS2DObject(mLabelDiv);
+                mLabel.position.set(0, mSize + 0.25, 0);
+                mMesh.add(mLabel);
+
+                moonMeshes.push({
+                    mesh: mMesh,
+                    data: mData,
+                    label: mLabel,
+                    labelDiv: mLabelDiv,
+                    angle: (mi / pData.moons.length) * Math.PI * 2,
+                    orbitRadius: mData.orbitRadius,
+                    speed: mData.speed,
+                });
+            });
+
+            planetObjects.push({
+                id: pData.id,
+                data: pData,
+                mesh: mesh,
+                label: label,
+                labelDiv: labelDiv,
+                angle: initAngle,
+                orbitRadius: pData.orbit,
+                speed: pData.speed,
+                moons: moonMeshes,
+            });
+        });
+
+        // ================================================================
+        //  RAYCASTER
+        // ================================================================
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        function onPointerDown(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            pointer.set(x, y);
+
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(allClickables);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                const id = hit.userData.id;
+                const type = hit.userData.type;
+                if (id) selectItem(id, type);
+            }
+        }
+
+        renderer.domElement.addEventListener('click', onPointerDown);
+        renderer.domElement.style.cursor = 'pointer';
+
+        // ================================================================
+        //  CAMERA ANIMATION
+        // ================================================================
+        const cameraAnim = {
+            active: false,
+            startTime: 0,
+            duration: 1.4,
+            startPos: new THREE.Vector3(),
+            endPos: new THREE.Vector3(),
+            startTarget: new THREE.Vector3(),
+            endTarget: new THREE.Vector3(),
+        };
+
+        function cinematicEase(t) {
+            if (t < 0.5) return 4 * t * t * t;
+            const p = 2 * t - 2;
+            return 1 - 0.5 * p * p * p * p * p;
+        }
+
+        function animateCameraTo(targetPos, targetLookAt) {
+            cameraAnim.active = false;
+            cameraAnim.startPos.copy(camera.position);
+            cameraAnim.startTarget.copy(controls.target);
+            cameraAnim.endPos.copy(targetPos);
+            cameraAnim.endTarget.copy(targetLookAt);
+            cameraAnim.startTime = performance.now();
+            cameraAnim.active = true;
+            document.getElementById('tracking-indicator').classList.add('visible');
+            setTimeout(() => {
+                if (!cameraAnim.active) document.getElementById('tracking-indicator').classList.remove('visible');
+            }, cameraAnim.duration * 1000 + 400);
+        }
+
+        function cancelCameraAnimation() {
+            if (cameraAnim.active) {
+                cameraAnim.active = false;
+                document.getElementById('tracking-indicator').classList.remove('visible');
+            }
+        }
+
+        controls.addEventListener('start', () => {
+            cancelCameraAnimation();
+        });
+
+        // ================================================================
+        //  SELECTION
+        // ================================================================
+        function selectItem(id, type) {
+            selectedItemId = id;
+            selectedType = type;
+
+            let planetData = null;
+            let moonData = null;
+            let targetMesh = null;
+            let found = false;
+
+            for (const p of planetObjects) {
+                if (p.id === id && type === 'planet') {
+                    planetData = p.data;
+                    targetMesh = p.mesh;
+                    found = true;
+                    break;
+                }
+                for (const m of p.moons) {
+                    if (m.mesh.userData.id === id && type === 'moon') {
+                        moonData = m.data;
+                        targetMesh = m.mesh;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+
+            if (!found || !targetMesh) return;
+
+            const worldPos = new THREE.Vector3();
+            targetMesh.getWorldPosition(worldPos);
+            let size = targetMesh.userData.size || 0.5;
+            const distance = Math.max(size * 4.5 + 2.5, 3.5);
+            const elevation = 0.45;
+            const azimuth = Math.PI / 4.5;
+            const camPos = new THREE.Vector3(
+                worldPos.x + distance * Math.cos(elevation) * Math.sin(azimuth),
+                worldPos.y + distance * Math.sin(elevation) + 0.3,
+                worldPos.z + distance * Math.cos(elevation) * Math.cos(azimuth)
+            );
+            animateCameraTo(camPos, worldPos.clone());
+
+            const lang = currentLang;
+            let t;
+            let nameEn;
+            let color;
+            let diameter, dist, period, moonsCount, fun;
+
+            if (type === 'planet') {
+                t = planetData.translations[lang] || planetData.translations.en;
+                nameEn = planetData.translations.en.name;
+                color = planetData.color;
+                diameter = t.diameter;
+                dist = t.distance;
+                period = t.period;
+                moonsCount = t.moons;
+                fun = t.fun;
+            } else {
+                t = moonData.translations[lang] || moonData.translations.en;
+                nameEn = moonData.translations.en.name;
+                color = moonData.color;
+                diameter = t.diameter || '—';
+                dist = t.distance || '—';
+                period = t.period || '—';
+                moonsCount = '—';
+                fun = t.fun || '—';
+            }
+
+            document.getElementById('p-name').textContent = t.name;
+            document.getElementById('p-name-en').textContent = nameEn;
+            document.getElementById('p-color-dot').style.background = '#' + color.toString(16).padStart(6, '0');
+
+            const facts = document.getElementById('p-facts');
+            facts.innerHTML = `
+            <div class="fact-item"><span class="label">Diameter</span><span class="value">${diameter}</span></div>
+            <div class="fact-item"><span class="label">Distance</span><span class="value">${dist}</span></div>
+            <div class="fact-item"><span class="label">Orbital period</span><span class="value">${period}</span></div>
+            ${type === 'planet' ? `<div class="fact-item"><span class="label">Moons</span><span class="value">${moonsCount}</span></div>` : ''}
+          `;
+            document.getElementById('p-funfact').textContent = fun;
+
+            document.getElementById('info-panel').classList.add('visible');
+            document.getElementById('hint').classList.add('hidden');
+
+            updateSidebarActive(id);
+
+            planetObjects.forEach(p => {
+                p.mesh.material.emissiveIntensity = 0.03;
+                p.moons.forEach(m => {
+                    m.mesh.material.emissiveIntensity = 0.02;
+                });
+            });
+            if (type === 'planet') {
+                const p = planetObjects.find(p => p.id === id);
+                if (p) p.mesh.material.emissiveIntensity = 0.6;
+            } else {
+                for (const p of planetObjects) {
+                    for (const m of p.moons) {
+                        if (m.mesh.userData.id === id) {
+                            m.mesh.material.emissiveIntensity = 0.6;
+                            p.mesh.material.emissiveIntensity = 0.2;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('tracking-indicator').classList.add('visible');
+        }
+
+        function deselectItem() {
+            selectedItemId = null;
+            selectedType = null;
+            document.getElementById('info-panel').classList.remove('visible');
+            document.getElementById('tracking-indicator').classList.remove('visible');
+            planetObjects.forEach(p => {
+                p.mesh.material.emissiveIntensity = 0.03;
+                p.moons.forEach(m => {
+                    m.mesh.material.emissiveIntensity = 0.02;
+                });
+            });
+            updateSidebarActive(null);
+            setTimeout(() => {
+                if (!selectedItemId) {
+                    document.getElementById('hint').classList.remove('hidden');
+                }
+            }, 1500);
+        }
+
+        document.getElementById('panel-close').addEventListener('click', deselectItem);
+
+        // ================================================================
+        //  SIDEBAR
+        // ================================================================
+        function buildSidebar() {
+            const tree = document.getElementById('sidebar-tree');
+            tree.innerHTML = '';
+            const lang = currentLang;
+
+            document.getElementById('project-title-text').textContent = PROJECT_TITLE[lang] || PROJECT_TITLE.en;
+
+            planetObjects.forEach(p => {
+                const pData = p.data;
+                const t = pData.translations[lang] || pData.translations.en;
+
+                const pDiv = document.createElement('div');
+                pDiv.className = 'tree-planet';
+                pDiv.dataset.id = p.id;
+                pDiv.dataset.type = 'planet';
+                pDiv.innerHTML = `
+              <span class="color-dot" style="background:#${pData.color.toString(16).padStart(6,'0')};"></span>
+              <span class="planet-label">${t.name}</span>
+              <span class="badge">${pData.moons.length}</span>
+            `;
+                pDiv.addEventListener('click', () => {
+                    selectItem(p.id, 'planet');
+                });
+                tree.appendChild(pDiv);
+
+                p.moons.forEach(m => {
+                    const mData = m.data;
+                    const mt = mData.translations[lang] || mData.translations.en;
+                    const mDiv = document.createElement('div');
+                    mDiv.className = 'tree-moon';
+                    mDiv.dataset.id = mData.id;
+                    mDiv.dataset.type = 'moon';
+                    mDiv.innerHTML = `
+                <span class="color-dot" style="background:#${mData.color.toString(16).padStart(6,'0')};"></span>
+                <span class="moon-icon">☾</span>
+                <span class="moon-label">${mt.name}</span>
+              `;
+                    mDiv.addEventListener('click', () => {
+                        selectItem(mData.id, 'moon');
+                    });
+                    tree.appendChild(mDiv);
+                });
+            });
+
+            if (selectedItemId) {
+                updateSidebarActive(selectedItemId);
+            }
+        }
+
+        function updateSidebarActive(id) {
+            document.querySelectorAll('#sidebar-tree .tree-planet, #sidebar-tree .tree-moon').forEach(el => {
+                el.classList.toggle('active', el.dataset.id === id);
+            });
+        }
+
+        // ================================================================
+        //  LANGUAGE
+        // ================================================================
+        const langSelector = document.getElementById('lang-selector');
+        LANG_CODES.forEach(code => {
+            const btn = document.createElement('button');
+            btn.textContent = LANG_NAMES[code] || code;
+            btn.dataset.lang = code;
+            if (code === currentLang) btn.classList.add('active');
+            btn.addEventListener('click', () => {
+                setLanguage(code);
+            });
+            langSelector.appendChild(btn);
+        });
+
+        function setLanguage(code) {
+            currentLang = code;
+            document.querySelectorAll('#lang-selector button').forEach(b => {
+                b.classList.toggle('active', b.dataset.lang === code);
+            });
+
+            planetObjects.forEach(p => {
+                const t = p.data.translations[code] || p.data.translations.en;
+                p.labelDiv.textContent = t.name;
+                p.moons.forEach(m => {
+                    const mt = m.data.translations[code] || m.data.translations.en;
+                    m.labelDiv.textContent = mt.name;
+                });
+            });
+
+            buildSidebar();
+
+            if (selectedItemId && selectedType) {
+                selectItem(selectedItemId, selectedType);
+            }
+        }
+
+        // ================================================================
+        //  SPEED
+        // ================================================================
+        const speedSlider = document.getElementById('speed-slider');
+        const speedLabel = document.getElementById('speed-label');
+        speedSlider.addEventListener('input', () => {
+            orbitSpeed = parseFloat(speedSlider.value);
+            speedLabel.textContent = orbitSpeed.toFixed(1) + '×';
+        });
+
+        // ================================================================
+        //  RESET VIEW
+        // ================================================================
+        document.getElementById('reset-view').addEventListener('click', () => {
+            const resetPos = new THREE.Vector3(18, 14, 28);
+            const resetTarget = new THREE.Vector3(0, 0, 0);
+            animateCameraTo(resetPos, resetTarget);
+            setTimeout(() => {
+                deselectItem();
+            }, 200);
+        });
+
+        // ================================================================
+        //  RESIZE
+        // ================================================================
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            labelRenderer.setSize(w, h);
+        });
+
+        // ================================================================
+        //  ANIMATION LOOP
+        // ================================================================
+        function animate() {
+            const delta = clock.getDelta();
+            time += delta * orbitSpeed;
+
+            if (cameraAnim.active) {
+                const elapsed = (performance.now() - cameraAnim.startTime) / 1000;
+                let t = Math.min(elapsed / cameraAnim.duration, 1);
+                const ease = cinematicEase(t);
+                camera.position.lerpVectors(cameraAnim.startPos, cameraAnim.endPos, ease);
+                controls.target.lerpVectors(cameraAnim.startTarget, cameraAnim.endTarget, ease);
+                if (t >= 1) {
+                    cameraAnim.active = false;
+                    camera.position.copy(cameraAnim.endPos);
+                    controls.target.copy(cameraAnim.endTarget);
+                    document.getElementById('tracking-indicator').classList.remove('visible');
+                }
+            }
+
+            if (selectedItemId && selectedType) {
+                let targetMesh = null;
+                for (const p of planetObjects) {
+                    if (p.id === selectedItemId && selectedType === 'planet') {
+                        targetMesh = p.mesh;
+                        break;
+                    }
+                    for (const m of p.moons) {
+                        if (m.mesh.userData.id === selectedItemId && selectedType === 'moon') {
+                            targetMesh = m.mesh;
+                            break;
+                        }
+                    }
+                    if (targetMesh) break;
+                }
+                if (targetMesh) {
+                    const worldPos = new THREE.Vector3();
+                    targetMesh.getWorldPosition(worldPos);
+                    controls.target.lerp(worldPos, 0.08);
+                    document.getElementById('tracking-indicator').classList.add('visible');
+                }
+            }
+
+            sun.rotation.y += delta * 0.08;
+            glowSprite.material.rotation += delta * 0.02;
+
+            planetObjects.forEach(p => {
+                const angle = p.angle + time * p.speed * 0.3;
+                p.mesh.position.x = p.orbitRadius * Math.cos(angle);
+                p.mesh.position.z = p.orbitRadius * Math.sin(angle);
+                p.mesh.rotation.y += delta * 0.4;
+
+                p.moons.forEach(m => {
+                    const mAngle = m.angle + time * m.speed * 0.5;
+                    m.mesh.position.x = m.orbitRadius * Math.cos(mAngle);
+                    m.mesh.position.z = m.orbitRadius * Math.sin(mAngle);
+                    m.mesh.rotation.y += delta * 0.3;
+                });
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // ================================================================
+        //  KEYBOARD
+        // ================================================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') deselectItem();
+            if (e.key === 'r' || e.key === 'R') {
+                document.getElementById('reset-view').click();
+            }
+        });
+
+        // ================================================================
+        //  INIT
+        // ================================================================
+        buildSidebar();
+
+        setTimeout(() => {
+            selectItem('earth', 'planet');
+        }, 700);
+
+        console.log('🪐 Solar System with REAL NASA textures!');
+        console.log(`🌍 ${LANG_CODES.length} languages. Photorealistic quality.`);
+    </script>
+</body>
+</html>
